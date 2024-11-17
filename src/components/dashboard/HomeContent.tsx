@@ -1,3 +1,8 @@
+import { MessagesSection } from "@/components/sections/messages";
+import { HealthSection } from "../sections/health/HealthSection";
+import { SocialSection } from "../sections/social";
+import { CommunitySection } from "../sections/groups";
+
 export const renderMainContent = ({
   activePage,
   isEditMode,
@@ -13,6 +18,8 @@ export const renderMainContent = ({
       return <SocialSection />;
     case "community":
       return <CommunitySection />;
+    case "messages":
+      return <MessagesSection />;
     default:
       return (
         <HomeContent

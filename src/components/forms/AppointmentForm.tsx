@@ -1,59 +1,28 @@
 "use client";
+
 import React, { useState } from "react";
 import { Calendar, Clock, MapPin, User, Phone, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Appointment,
+  AppointmentFormProps,
+  FormErrors,
+  INITIAL_APPOINTMENT_STATE,
+  SPECIALTIES,
+} from "./types";
+import { validateAppointment } from "./validation";
 
-const AppointmentForm = () => {
-  const [formData, setFormData] = useState({
-    doctorName: "",
-    specialty: "",
-    date: "",
-    time: "",
-    location: "",
-    phoneNumber: "",
-    notes: "",
-    reminders: true,
-  });
-
-  const [errors, setErrors] = useState({});
+const AppointmentForm = ({
+  onSubmit,
+  initialData,
+  isEditing = false,
+}: AppointmentFormProps) => {
+  const [formData, setFormData] = useState<Appointment>(
+    initialData || INITIAL_APPOINTMENT_STATE
+  );
+  const [errors, setErrors] = useState<FormErrors>({});
   const [submitStatus, setSubmitStatus] = useState("");
-
-  const specialties = [
-    "Primary Care",
-    "Cardiology",
-    "Neurology",
-    "Orthopedics",
-    "Dentistry",
-    "Physical Therapy",
-    "Other",
-  ];
-
-  const validateForm = () => {
-    let newErrors = {};
-    if (!formData.doctorName.trim()) {
-      newErrors.doctorName = "Doctor name is required";
-    }
-    if (!formData.specialty) {
-      newErrors.specialty = "Specialty is required";
-    }
-    if (!formData.date) {
-      newErrors.date = "Date is required";
-    }
-    if (!formData.time) {
-      newErrors.time = "Time is required";
-    }
-    if (!formData.location.trim()) {
-      newErrors.location = "Location is required";
-    }
-    if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = "Phone number is required";
-    } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\D/g, ""))) {
-      newErrors.phoneNumber = "Please enter a valid 10-digit phone number";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const isDarkMode = document.documentElement.classList.contains("dark");
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -76,32 +45,37 @@ const AppointmentForm = () => {
 
     if (validateForm()) {
       try {
-        // Here you would typically make an API call to save the appointment
-        console.log("Submitting appointment:", formData);
+        await onSubmit(formData);
         setSubmitStatus("success");
         // Reset form after successful submission
-        setFormData({
-          doctorName: "",
-          specialty: "",
-          date: "",
-          time: "",
-          location: "",
-          phoneNumber: "",
-          notes: "",
-          reminders: true,
-        });
+        if (!isEditing) {
+          setFormData(INITIAL_APPOINTMENT_STATE);
+        }
       } catch (error) {
         console.error("Error submitting appointment:", error);
         setSubmitStatus("error");
       }
     }
   };
+  const validateForm = () => {
+    const validationErrors = validateAppointment(formData);
+    setErrors(validationErrors);
+    return Object.keys(validationErrors).length === 0;
+  };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card
+      className={`w-full max-w-2xl mx-auto ${
+        isDarkMode ? "bg-gray-800" : "bg-white"
+      }`}
+    >
       <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center text-gray-800">
-          Schedule New Appointment
+        <CardTitle
+          className={`text-2xl font-bold text-center ${
+            isDarkMode ? "text-white" : "text-gray-800"
+          }`}
+        >
+          {isEditing ? "Edit Appointment" : "Schedule New Appointment"}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -111,13 +85,19 @@ const AppointmentForm = () => {
             <div className="relative">
               <label
                 htmlFor="doctorName"
-                className="block text-lg font-medium text-gray-700 mb-2"
+                className={`block text-lg font-medium mb-2 ${
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                }`}
               >
                 Doctor's Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
+                  <User
+                    className={`h-5 w-5 ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  />
                 </div>
                 <input
                   type="text"
@@ -125,8 +105,12 @@ const AppointmentForm = () => {
                   name="doctorName"
                   value={formData.doctorName}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-3 py-3 text-lg border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    errors.doctorName ? "border-red-500" : "border-gray-300"
+                  className={`block w-full pl-10 pr-3 py-3 text-lg rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                    errors.doctorName
+                      ? "border-red-500"
+                      : isDarkMode
+                      ? "border-gray-600 bg-gray-700 text-white"
+                      : "border-gray-300"
                   }`}
                   placeholder="Dr. John Smith"
                 />
@@ -135,11 +119,12 @@ const AppointmentForm = () => {
                 <p className="mt-1 text-red-500">{errors.doctorName}</p>
               )}
             </div>
-
             <div>
               <label
                 htmlFor="specialty"
-                className="block text-lg font-medium text-gray-700 mb-2"
+                className={`block text-lg font-medium mb-2 ${
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                }`}
               >
                 Specialty
               </label>
@@ -148,12 +133,16 @@ const AppointmentForm = () => {
                 name="specialty"
                 value={formData.specialty}
                 onChange={handleInputChange}
-                className={`block w-full py-3 px-4 text-lg border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                  errors.specialty ? "border-red-500" : "border-gray-300"
+                className={`block w-full py-3 px-4 text-lg rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                  errors.specialty
+                    ? "border-red-500"
+                    : isDarkMode
+                    ? "border-gray-600 bg-gray-700 text-white"
+                    : "border-gray-300"
                 }`}
               >
                 <option value="">Select a specialty</option>
-                {specialties.map((specialty) => (
+                {SPECIALTIES.map((specialty) => (
                   <option key={specialty} value={specialty}>
                     {specialty}
                   </option>
@@ -170,13 +159,19 @@ const AppointmentForm = () => {
             <div>
               <label
                 htmlFor="date"
-                className="block text-lg font-medium text-gray-700 mb-2"
+                className={`block text-lg font-medium mb-2 ${
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                }`}
               >
                 Date
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Calendar className="h-5 w-5 text-gray-400" />
+                  <Calendar
+                    className={`h-5 w-5 ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  />
                 </div>
                 <input
                   type="date"
@@ -184,8 +179,12 @@ const AppointmentForm = () => {
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-3 py-3 text-lg border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    errors.date ? "border-red-500" : "border-gray-300"
+                  className={`block w-full pl-10 pr-3 py-3 text-lg rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                    errors.date
+                      ? "border-red-500"
+                      : isDarkMode
+                      ? "border-gray-600 bg-gray-700 text-white"
+                      : "border-gray-300"
                   }`}
                 />
               </div>
@@ -193,17 +192,22 @@ const AppointmentForm = () => {
                 <p className="mt-1 text-red-500">{errors.date}</p>
               )}
             </div>
-
             <div>
               <label
                 htmlFor="time"
-                className="block text-lg font-medium text-gray-700 mb-2"
+                className={`block text-lg font-medium mb-2 ${
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                }`}
               >
                 Time
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Clock className="h-5 w-5 text-gray-400" />
+                  <Clock
+                    className={`h-5 w-5 ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  />
                 </div>
                 <input
                   type="time"
@@ -211,8 +215,12 @@ const AppointmentForm = () => {
                   name="time"
                   value={formData.time}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-3 py-3 text-lg border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    errors.time ? "border-red-500" : "border-gray-300"
+                  className={`block w-full pl-10 pr-3 py-3 text-lg rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                    errors.time
+                      ? "border-red-500"
+                      : isDarkMode
+                      ? "border-gray-600 bg-gray-700 text-white"
+                      : "border-gray-300"
                   }`}
                 />
               </div>
@@ -227,13 +235,19 @@ const AppointmentForm = () => {
             <div>
               <label
                 htmlFor="location"
-                className="block text-lg font-medium text-gray-700 mb-2"
+                className={`block text-lg font-medium mb-2 ${
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                }`}
               >
                 Location
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MapPin className="h-5 w-5 text-gray-400" />
+                  <MapPin
+                    className={`h-5 w-5 ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  />
                 </div>
                 <input
                   type="text"
@@ -241,8 +255,12 @@ const AppointmentForm = () => {
                   name="location"
                   value={formData.location}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-3 py-3 text-lg border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    errors.location ? "border-red-500" : "border-gray-300"
+                  className={`block w-full pl-10 pr-3 py-3 text-lg rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                    errors.location
+                      ? "border-red-500"
+                      : isDarkMode
+                      ? "border-gray-600 bg-gray-700 text-white"
+                      : "border-gray-300"
                   }`}
                   placeholder="123 Medical Center Dr."
                 />
@@ -251,17 +269,22 @@ const AppointmentForm = () => {
                 <p className="mt-1 text-red-500">{errors.location}</p>
               )}
             </div>
-
             <div>
               <label
                 htmlFor="phoneNumber"
-                className="block text-lg font-medium text-gray-700 mb-2"
+                className={`block text-lg font-medium mb-2 ${
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                }`}
               >
                 Phone Number
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Phone className="h-5 w-5 text-gray-400" />
+                  <Phone
+                    className={`h-5 w-5 ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  />
                 </div>
                 <input
                   type="tel"
@@ -269,8 +292,12 @@ const AppointmentForm = () => {
                   name="phoneNumber"
                   value={formData.phoneNumber}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-3 py-3 text-lg border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    errors.phoneNumber ? "border-red-500" : "border-gray-300"
+                  className={`block w-full pl-10 pr-3 py-3 text-lg rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                    errors.phoneNumber
+                      ? "border-red-500"
+                      : isDarkMode
+                      ? "border-gray-600 bg-gray-700 text-white"
+                      : "border-gray-300"
                   }`}
                   placeholder="(555) 123-4567"
                 />
@@ -280,18 +307,23 @@ const AppointmentForm = () => {
               )}
             </div>
           </div>
-
           {/* Notes */}
           <div>
             <label
               htmlFor="notes"
-              className="block text-lg font-medium text-gray-700 mb-2"
+              className={`block text-lg font-medium mb-2 ${
+                isDarkMode ? "text-gray-200" : "text-gray-700"
+              }`}
             >
               Notes
             </label>
             <div className="relative">
               <div className="absolute top-3 left-3 pointer-events-none">
-                <FileText className="h-5 w-5 text-gray-400" />
+                <FileText
+                  className={`h-5 w-5 ${
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
+                  }`}
+                />
               </div>
               <textarea
                 id="notes"
@@ -299,12 +331,15 @@ const AppointmentForm = () => {
                 value={formData.notes}
                 onChange={handleInputChange}
                 rows={4}
-                className="block w-full pl-10 pr-3 py-3 text-lg border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
+                className={`block w-full pl-10 pr-3 py-3 text-lg rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                  isDarkMode
+                    ? "border-gray-600 bg-gray-700 text-white"
+                    : "border-gray-300"
+                }`}
                 placeholder="Add any additional notes or special instructions..."
               />
             </div>
           </div>
-
           {/* Reminders Toggle */}
           <div className="flex items-center space-x-3">
             <input
@@ -317,7 +352,9 @@ const AppointmentForm = () => {
             />
             <label
               htmlFor="reminders"
-              className="text-lg font-medium text-gray-700"
+              className={`text-lg font-medium ${
+                isDarkMode ? "text-gray-200" : "text-gray-700"
+              }`}
             >
               Send me reminders about this appointment
             </label>
